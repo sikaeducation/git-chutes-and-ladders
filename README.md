@@ -14,11 +14,7 @@ single branch.
 Hints:
 
 - To find the Git hash of the space you want to move to you'll need to use
-  `git log`
-  - `git log` only shows commits that are early than your current commit. You
-    can use `git reset --hard list` to get back to a commit that can see all 100
-    commits. to find the correct commit hash and `git reset --hard` to move to
-    it.
+  `git log ..list`
   - You can use `j`/`k` and `Control+d`/`Control+u` to scroll Git history
   - Press `q` to quit `git log`
 - You can use `git reflog` to see previous commits you've been on
