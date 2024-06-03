@@ -1,0 +1,100 @@
+#!/bin/bash
+
+wrong_space () {
+  CURRENT_SPACE_NUMBER=$1
+  TARGET_SPACE_NUMBER=$2
+  IS_NUMBER='^[0-9]+$'
+  if ! [[ $CURRENT_SPACE_NUMBER =~ $IS_NUMBER ]]; then
+    echo "Oops, you're not on a space right now" >> ./misses
+  else
+    echo "You're on space $CURRENT_SPACE_NUMBER, but need to be on space $TARGET_SPACE_NUMBER" >> ./misses
+  fi
+  tail -n 1 ./misses
+  echo $'\n'
+  exit 1
+}
+
+victory () {
+  MOVE_COUNT="$(cat moves | wc -l | awk '{$1=$1};1')"
+  MISS_COUNT="$(cat misses | wc -l | awk '{$1=$1};1')"
+  if [[ $MISS_COUNT == 0 ]]; then
+    echo "You won in $MOVE_COUNT moves with no mistakes!"
+    echo $'\n\n'
+  else
+    echo "You won in $MOVE_COUNT moves with $MISS_COUNT mistakes. Run ./new-game to try again!"
+    echo $'\n\n'
+  fi
+
+  echo "Victory in $MOVE_COUNT moves with $MISS_COUNT mistakes" > ./results
+  git reset --hard list
+  exit 0
+}
+
+normal_space () {
+  CURRENT_SPACE_NUMBER=$1
+  ROLL=$(($RANDOM % 12 + 1))
+
+  if [[ $(($CURRENT_SPACE_NUMBER + ROLL)) -ge 100 ]]; then
+    ROLL=$((100 - $CURRENT_SPACE_NUMBER))
+  fi
+
+  echo "+$ROLL" >> ./moves
+  echo "You rolled a $ROLL, move to space $(($CURRENT_SPACE_NUMBER + $ROLL))"
+  echo $'\n'
+}
+
+ladder_space () {
+  CURRENT_SPACE_NUMBER="$1"
+  NEXT_SPACE_DELTA="$2"
+
+  echo "$NEXT_SPACE_DELTA" >> ./moves
+  echo "You found a ladder! Go to space $(($CURRENT_SPACE_NUMBER$NEXT_SPACE_DELTA))"
+  echo $'\n'
+}
+
+chute_space () {
+  CURRENT_SPACE_NUMBER="$1"
+  NEXT_SPACE_DELTA="$2"
+
+  echo "$NEXT_SPACE_DELTA" >> ./moves
+  echo "Oh no, a chute! Go to space $(($CURRENT_SPACE_NUMBER$NEXT_SPACE_DELTA))"
+  echo $'\n'
+}
+
+next_move () {
+  CURRENT_SPACE_NUMBER="$1"
+  SPACE="$2"
+  NEXT_SPACE_DELTA=$(echo "$SPACE" | cut -d "," -f 2)
+  OPERATOR=$(printf %.1s "$NEXT_SPACE_DELTA")
+  if [[ $OPERATOR == '0' ]]; then
+    normal_space "$CURRENT_SPACE_NUMBER"
+  elif [[ $OPERATOR == '+' ]]; then
+    ladder_space "$CURRENT_SPACE_NUMBER" "$NEXT_SPACE_DELTA"
+  elif [[ $OPERATOR == '-' ]]; then
+    chute_space "$CURRENT_SPACE_NUMBER" "$NEXT_SPACE_DELTA"
+  fi
+}
+
+################################################################
+
+CURRENT_SPACE_NUMBER=$(git show --pretty=format:%s -s HEAD)
+
+TARGET_SPACE_NUMBER=0
+for MOVE_DELTA in $(cat ./moves); do
+  TARGET_SPACE_NUMBER="$(($TARGET_SPACE_NUMBER$MOVE_DELTA))"
+done
+
+if [[ "$CURRENT_SPACE_NUMBER" != "$TARGET_SPACE_NUMBER" ]]; then
+  wrong_space "$CURRENT_SPACE_NUMBER" "$TARGET_SPACE_NUMBER"
+fi
+
+if [[ "$CURRENT_SPACE_NUMBER" -ge '100' ]]; then
+  victory
+fi
+
+for SPACE in $(cat ./spaces); do
+  SPACE_NUMBER=$(echo "$SPACE" | cut -d "," -f 1)
+  if [[ "$SPACE_NUMBER" == "$CURRENT_SPACE_NUMBER" ]]; then
+    next_move "$CURRENT_SPACE_NUMBER" "$SPACE"
+  fi
+done

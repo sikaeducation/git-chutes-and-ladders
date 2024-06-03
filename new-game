@@ -1,0 +1,22 @@
+#!/bin/sh
+
+check_dependency () {
+  DEPENDENCY=$1
+  if ! command -v $DEPENDENCY &> /dev/null
+  then
+      echo "The program depends needs $DEPENDENCY to be installed"
+      exit 1
+  fi
+}
+
+check_dependency 'git'
+check_dependency 'wc'
+check_dependency 'cut'
+check_dependency 'printf'
+
+## Remove old state
+rm -rf misses moves results
+echo "0" > ./moves
+touch ./misses
+
+git reset --hard start
