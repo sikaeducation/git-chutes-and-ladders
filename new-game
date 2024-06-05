@@ -9,10 +9,10 @@ check_dependency () {
   fi
 }
 
-check_dependency 'git'
-check_dependency 'wc'
-check_dependency 'cut'
-check_dependency 'printf'
+# check_dependency 'git'
+# check_dependency 'wc'
+# check_dependency 'cut'
+# check_dependency 'printf'
 
 ## Remove old state
 rm -rf misses moves results
